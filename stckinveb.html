@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Inventory Management</title>
+    <link rel="stylesheet" href="style.css" type="text/css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<style type="text/css">
+
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 10px 20px;
+            color: white;
+        }
+
+        .navbar h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .navbar .menu {
+            position: relative;
+        }
+
+        .navbar .menu-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .navbar .dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .navbar .dropdown a,
+        .navbar .dropdown label {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .navbar .dropdown a:hover,
+        .navbar .dropdown label:hover {
+            background-color: #f1f1f1;
+        }
+
+        .navbar .menu:hover .dropdown {
+            display: block;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Floating Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .modal-content button {
+            margin-top: 10px;
+        }
+
+        /* Container Styles */
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        /* Category Buttons */
+        .category-buttons {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .category-buttons button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .category-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* Table Styles */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 300px;
+        }
+
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        th {
+            height: 30px;
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            
+            height: 30px;
+        }
+td:nth-child(4){
+    width:2px;
+    padding:0px;
+}
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .actions button {
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .actions button.delete {
+            background-color: #f44336;
+        }
+
+        .actions button.edit {
+            background-color: #008CBA;
+        }
+
+        .actions button.save {
+            background-color: #4CAF50;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .editable {
+            cursor: pointer;
+            background-color: #e0f7fa;
+        }
+
+        .editable input, .editable select {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .modal-content form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        input, select {
+            height: 30px;
+            width: 100%;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+            padding: 8px;
+        }
+
+        /* Password Modal */
+        .password-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .password-modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .password-modal-content h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .password-error {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+
+
+</style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <h1>Car Corals</h1>
+        <div class="menu">
+            <button class="menu-button">&#9776;</button>
+            <div class="dropdown">
+                <a href="#" onclick="requestAddItem()">Add Item</a>
+                <label>
+                    Edit Mode:
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="editToggle" onclick="requestEditMode()">
+                        <span class="slider"></span>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div class="password-modal" id="passwordModal">
+        <div class="password-modal-content">
+            <h2>Enter Password</h2>
+            <form id="passwordForm">
+                <input type="password" id="passwordInput" placeholder="Password" required>
+                <div class="password-error" id="passwordError">Incorrect password. Try again.</div>
+                <div class="modal-buttons">
+                    <button type="submit">Submit</button>
+                    <button type="button" onclick="closePasswordModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Item Modal -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Add Item</h2>
+            <form id="itemForm">
+                <label for="category">Category:</label>
+                <select id="category" required>
+                    <option value="7d_mat">7D Mat</option>
+                    <option value="tray_mat">Tray Mat</option>
+                    <option value="local_lamination_mat">Local Lamination Mat</option>
+                    <option value="branded_lamination_mat">Branded Lamination Mat</option>
+                </select>
+
+                <label for="carName">Car Name:</label>
+                <input type="text" id="carName" required>
+
+                <label for="brand">Brand:</label>
+                <input type="text" id="brand" required>
+
+                <label for="quantity">Quantity:</label>
+                <input type="number" id="quantity" required>
+
+                <div class="modal-buttons">
+                    <button type="submit" id="submitButton">Add Item</button>
+                    <button type="button" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="search" id="searchInput" placeholder="Search by Car Name" oninput="filterItems()">
+        </div>
+
+        <!-- Category Buttons -->
+        <div class="category-buttons">
+            <button onclick="filterItems('7d_mat')">7D Mat</button>
+            <button onclick="filterItems('tray_mat')">Tray Mat</button>
+            <button onclick="filterItems('local_lamination_mat')">Local Lamination Mat</button>
+            <button onclick="filterItems('branded_lamination_mat')">Branded Lamination Mat</button>
+        </div>
+
+        <h2>Inventory</h2>
+        <div class="table-container">
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Car Name</th>
+                        <th>Brand</th>
+                        <th>QTY.</th>
+                        <th class="actions-header hidden">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be added here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+    
+    document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('itemForm');
+    const tableBody = document.querySelector('#inventoryTable tbody');
+    const submitButton = document.getElementById('submitButton');
+    const editToggle = document.getElementById('editToggle');
+    const modal = document.getElementById('itemModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const actionsHeader = document.querySelector('.actions-header');
+    const searchInput = document.getElementById('searchInput');
+    const passwordModal = document.getElementById('passwordModal');
+    const passwordForm = document.getElementById('passwordForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordError = document.getElementById('passwordError');
+    
+    let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+    let editIndex = null;
+    let currentCategory = null;
+    const PASSWORD = "car@0987";
+    let editModeEnabled = false;
+    let pendingAction = null; // 'add' or 'edit'
+    
+    // Save inventory to local storage
+    function saveInventory() {
+    localStorage.setItem('inventory', JSON.stringify(inventory));
+    }
+    
+    // Sort inventory by car name
+    function sortInventory() {
+    inventory.sort((a, b) => a.carName.localeCompare(b.carName));
+    }
+    
+    // Render inventory table
+    function renderInventory() {
+    sortInventory();
+    tableBody.innerHTML = '';
+    const searchTerm = searchInput.value.toLowerCase();
+    const filteredItems = inventory.filter(item => {
+    const matchesCategory = !currentCategory || item.category === currentCategory;
+    const matchesSearch = item.carName.toLowerCase().includes(searchTerm);
+    return matchesCategory && matchesSearch;
+    });
+    
+    filteredItems.forEach((item, index) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+    <td>${item.category.replace(/_/g, ' ')}</td>
+    <td>${item.carName}</td>
+    <td>${item.brand}</td>
+    <td>${item.quantity}</td>
+    <td class="actions ${!editModeEnabled ? 'hidden' : ''}">
+    <button class="edit" onclick="editItem(${index})">Edit</button>
+    <button class="delete" onclick="deleteItem(${index})">Delete</button>
+    </td>
+    `;
+    tableBody.appendChild(row);
+    });
+    
+    actionsHeader.classList.toggle('hidden', !editModeEnabled);
+    }
+    
+    // Edit item (show edit inputs)
+    window.editItem = (index) => {
+    if (!editModeEnabled) return;
+    
+    const row = tableBody.children[index];
+    const cells = row.querySelectorAll('td');
+    const item = inventory[index];
+    
+    // Make cells editable
+    cells[0].innerHTML = `
+    <select onchange="saveEdit(${index}, 'category', this.value)">
+    <option value="7d_mat" ${item.category === '7d_mat' ? 'selected' : ''}>7D Mat</option>
+    <option value="tray_mat" ${item.category === 'tray_mat' ? 'selected' : ''}>Tray Mat</option>
+    <option value="local_lamination_mat" ${item.category === 'local_lamination_mat' ? 'selected' : ''}>Local Lamination Mat</option>
+    <option value="branded_lamination_mat" ${item.category === 'branded_lamination_mat' ? 'selected' : ''}>Branded Lamination Mat</option>
+    </select>
+    `;
+    
+    cells[1].innerHTML = `<input type="text" value="${item.carName}" onblur="saveEdit(${index}, 'carName', this.value)">`;
+    cells[2].innerHTML = `<input type="text" value="${item.brand}" onblur="saveEdit(${index}, 'brand', this.value)">`;
+    cells[3].innerHTML = `<input type="number" value="${item.quantity}" onblur="saveEdit(${index}, 'quantity', this.value)">`;
+    
+    // Change Edit button to Save button
+    cells[4].innerHTML = `
+    <button class="save" onclick="saveAllEdits(${index})">Save</button>
+    <button class="delete" onclick="cancelEdit(${index})">Cancel</button>
+    `;
+    
+    // Focus on first input
+    cells[0].querySelector('select').focus();
+    };
+    
+    // Save individual field edit
+    window.saveEdit = (index, property, value) => {
+    inventory[index][property] = property === 'quantity' ? parseInt(value) || 0 : value;
+    };
+    
+    // Save all edits for an item
+    window.saveAllEdits = (index) => {
+    const row = tableBody.children[index];
+    const inputs = row.querySelectorAll('input, select');
+    
+    inventory[index] = {
+    category: inputs[0].value,
+    carName: inputs[1].value,
+    brand: inputs[2].value,
+    quantity: parseInt(inputs[3].value) || 0
+    };
+    
+    saveInventory();
+    renderInventory();
+    };
+    
+    // Cancel editing an item
+    window.cancelEdit = (index) => {
+    renderInventory();
+    };
+    
+    // Filter items by category
+    window.filterItems = (category) => {
+    currentCategory = category;
+    renderInventory();
+    };
+    
+    // Request to add item (shows password modal first)
+    window.requestAddItem = () => {
+    pendingAction = 'add';
+    passwordModal.style.display = 'flex';
+    passwordInput.focus();
+    passwordError.style.display = 'none';
+    };
+    
+    // Open modal for adding items after password verification
+    window.openModal = () => {
+    modal.style.display = 'flex';
+    modalTitle.textContent = 'Add Item';
+    form.reset();
+    editIndex = null;
+    submitButton.textContent = 'Add Item';
+    };
+    
+    // Close modal
+    window.closeModal = () => {
+    modal.style.display = 'none';
+    };
+    
+    // Request edit mode (shows password modal)
+    window.requestEditMode = () => {
+    if (editToggle.checked && !editModeEnabled) {
+    pendingAction = 'edit';
+    passwordModal.style.display = 'flex';
+    passwordInput.focus();
+    passwordError.style.display = 'none';
+    } else {
+    editModeEnabled = false;
+    editToggle.checked = false;
+    renderInventory();
+    }
+    };
+    
+    // Close password modal
+    window.closePasswordModal = () => {
+    passwordModal.style.display = 'none';
+    passwordInput.value = '';
+    if (pendingAction === 'edit') {
+    editToggle.checked = false;
+    }
+    pendingAction = null;
+    };
+    
+    // Verify password for edit mode or add item
+    passwordForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (passwordInput.value === PASSWORD) {
+    if (pendingAction === 'add') {
+    openModal();
+    } else if (pendingAction === 'edit') {
+    editModeEnabled = true;
+    renderInventory();
+    }
+    passwordModal.style.display = 'none';
+    passwordInput.value = '';
+    pendingAction = null;
+    } else {
+    passwordError.style.display = 'block';
+    passwordInput.focus();
+    if (pendingAction === 'edit') {
+    editToggle.checked = false;
+    }
+    }
+    });
+    
+    // Add or update item
+    form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const category = document.getElementById('category').value;
+    const carName = document.getElementById('carName').value;
+    const brand = document.getElementById('brand').value;
+    const quantity = document.getElementById('quantity').value;
+    
+    const newItem = { 
+    category, 
+    carName, 
+    brand, 
+    quantity: parseInt(quantity) || 0 
+    };
+    
+    if (editIndex !== null) {
+    inventory[editIndex] = newItem;
+    editIndex = null;
+    } else {
+    inventory.push(newItem);
+    }
+    
+    saveInventory();
+    renderInventory();
+    closeModal();
+    });
+    
+    // Delete item
+    window.deleteItem = (index) => {
+    if (confirm('Are you sure you want to delete this item?')) {
+    inventory.splice(index, 1);
+    saveInventory();
+    renderInventory();
+    }
+    };
+    
+    // Search functionality
+    searchInput.addEventListener('input', () => {
+    renderInventory();
+    });
+    
+    // Initial render
+    renderInventory();
+    });
+    
+    
+    const firebaseConfig = {
+    // Replace with your Firebase configuration
+    apiKey: "AIzaSyB_iTPL6h8nN7pcizz-TVzonCtN3aebvmA",
+    authDomain: "car-inventory-1255e.firebaseapp.com",
+    projectId: "car-inventory-1255e",
+    storageBucket: "car-inventory-1255e.firebasestorage.app",
+    messagingSenderId: "1028968337658",
+    appId: "1:1028968337658:web:ff6012eec45a8669b27943",
+    measurementId: "G-DSYSRDWTV3"
+    };
+    
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const inventoryCollection = db.collection('inventory'); // This is where your inventory data will be stored
+    
+    inventoryCollection.add({
+    category: category,
+    carName: carName,
+    brand: brand,
+    quantity: quantity
+    });
+    
+    inventoryCollection.get().then((snapshot) => {
+    snapshot.forEach((doc) => {
+    // doc.data() contains the data for each item
+    console.log(doc.id, "=>", doc.data());
+    });
+    });
+    
+    inventoryCollection.doc(docId).update({
+    category: newCategory,
+    carName: newCarName,
+    // ... other fields
+    });
+    
+    inventoryCollection.doc(docId).delete();
+    
+    </script>
+
+</body>
+</html>
